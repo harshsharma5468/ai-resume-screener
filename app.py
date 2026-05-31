@@ -4,6 +4,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import sys
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -13,6 +16,7 @@ from model.skill_extractor import (
     extract_name, extract_email, extract_phone
 )
 from model.scorer import rank_jobs
+from model.job_fetcher import fetch_jobs
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -67,7 +71,11 @@ st.markdown("""
 
 
 @st.cache_data
-def load_jobs():
+def load_jobs(query: str = "software engineer"):
+    live = fetch_jobs(query=query, num_pages=2)
+    if not live.empty:
+        return live
+    # fallback to local CSV
     path = os.path.join(os.path.dirname(__file__), "dataset", "job_descriptions.csv")
     return pd.read_csv(path)
 
@@ -174,6 +182,11 @@ if resume_text:
     candidate_phone = extract_phone(resume_text)
     resume_skills   = extract_skills(resume_text)
     resume_exp      = extract_experience_years(resume_text)
+
+    # Reload jobs using top skills as search query (live API if key set)
+    if resume_skills:
+        query = " ".join(resume_skills[:5])
+        jobs_df = load_jobs(query=query)
 
     # ── Candidate Profile ─────────────────────────────────────────────────────
     st.markdown("## 👤 Candidate Profile")
