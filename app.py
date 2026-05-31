@@ -115,6 +115,12 @@ with st.sidebar:
     st.markdown("---")
     top_n = st.slider("Top N Jobs to Show", 3, 20, 5)
     min_score = st.slider("Minimum Match Score (%)", 0, 100, 0)
+    st.markdown("---")
+    _api_key = os.getenv("JSEARCH_API_KEY", "")
+    if _api_key and _api_key != "your_rapidapi_key_here":
+        st.success("🌐 Live Jobs: API Connected")
+    else:
+        st.warning("📁 Using local CSV (no API key)")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -387,4 +393,6 @@ else:
     st.markdown("### 📋 Available Job Listings Preview")
     preview_df = jobs_df[["job_title", "company", "location", "experience_years", "required_skills"]].copy()
     preview_df.columns = ["Job Title", "Company", "Location", "Exp (yrs)", "Required Skills"]
+    if "apply_link" in jobs_df.columns:
+        preview_df["Apply Link"] = jobs_df["apply_link"]
     st.dataframe(preview_df, use_container_width=True, height=400)
