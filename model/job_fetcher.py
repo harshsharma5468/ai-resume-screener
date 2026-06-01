@@ -23,10 +23,14 @@ def fetch_jobs(query: str = "software engineer", num_pages: int = 1) -> pd.DataF
     for page in range(1, num_pages + 1):
         params = {"query": query, "page": str(page), "num_pages": "1"}
         try:
-            resp = requests.get(url, headers=headers, params=params, timeout=10)
+            resp = requests.get(url, headers=headers, params=params, timeout=20)
             resp.raise_for_status()
             data = resp.json().get("data", [])
-        except Exception:
+            if not data:
+                print(f"[job_fetcher] API returned empty data. Response: {resp.json()}")
+                break
+        except Exception as e:
+            print(f"[job_fetcher] API error: {e}")
             break
 
         for i, job in enumerate(data):

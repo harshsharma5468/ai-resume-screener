@@ -70,7 +70,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_jobs(query: str = "software engineer"):
     live = fetch_jobs(query=query, num_pages=2)
     if not live.empty:
@@ -121,14 +121,13 @@ with st.sidebar:
         st.success("🌐 Live Jobs: API Connected")
     else:
         st.warning("📁 Using local CSV (no API key)")
+    st.caption("Jobs refresh every 5 min")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 st.markdown('<h1 class="main-header">🤖 AI Resume Screening & Job Match System</h1>', unsafe_allow_html=True)
 st.markdown("<p style='text-align:center;color:#666;'>Upload your resume and discover your best job matches powered by NLP & ML</p>", unsafe_allow_html=True)
 st.markdown("---")
-
-jobs_df = load_jobs()
 
 uploaded_file = st.file_uploader(
     "📄 Upload Your Resume (PDF)",
@@ -189,9 +188,9 @@ if resume_text:
     resume_skills   = extract_skills(resume_text)
     resume_exp      = extract_experience_years(resume_text)
 
-    # Reload jobs using top skills as search query (live API if key set)
-    if resume_skills:
-        query = " ".join(resume_skills[:5])
+    # Build query from resume skills and fetch live jobs
+    query = " ".join(resume_skills[:5]) if resume_skills else "software engineer"
+    with st.spinner(f"🌐 Fetching live jobs for: `{query}`..."):
         jobs_df = load_jobs(query=query)
 
     # ── Candidate Profile ─────────────────────────────────────────────────────
@@ -285,6 +284,8 @@ if resume_text:
                 col_d.metric("📅 Experience",f"{row['experience_score']:.1f}%")
 
                 st.markdown(f"📍 **Location:** {row['location']}")
+                if row.get("apply_link"):
+                    st.markdown(f"🔗 [Apply Now]({row['apply_link']})")
 
                 st.markdown("**✅ Matched Skills:**")
                 if row["matched_skills"]:
@@ -381,7 +382,7 @@ else:
     <div style="text-align:center; padding: 3rem; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 15px;">
         <h2>👆 Upload your resume to get started</h2>
         <p style="color:#666; font-size:1.1rem;">
-            Our AI will extract your skills, match you against 20 real job listings,<br>
+            Our AI will extract your skills, fetch live jobs matching your profile,<br>
             and show you exactly what skills you need to land your dream job.
         </p>
         <br>
@@ -390,9 +391,8 @@ else:
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("### 📋 Available Job Listings Preview")
-    preview_df = jobs_df[["job_title", "company", "location", "experience_years", "required_skills"]].copy()
+    st.markdown("### 📋 Sample Job Listings Preview")
+    fallback_path = os.path.join(os.path.dirname(__file__), "dataset", "job_descriptions.csv")
+    preview_df = pd.read_csv(fallback_path)[["job_title", "company", "location", "experience_years", "required_skills"]].copy()
     preview_df.columns = ["Job Title", "Company", "Location", "Exp (yrs)", "Required Skills"]
-    if "apply_link" in jobs_df.columns:
-        preview_df["Apply Link"] = jobs_df["apply_link"]
     st.dataframe(preview_df, use_container_width=True, height=400)
