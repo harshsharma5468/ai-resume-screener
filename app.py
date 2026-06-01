@@ -6,7 +6,7 @@ import sys
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 sys.path.insert(0, os.path.dirname(__file__))
 
 from model.pdf_extractor import extract_text_from_bytes
