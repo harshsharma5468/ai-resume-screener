@@ -44,9 +44,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-def get_fallback_jobs():
-    path = os.path.join(os.path.dirname(__file__), "dataset", "job_descriptions.csv")
-    return pd.read_csv(path)
+
 
 
 def render_skills(skills, css_class):
@@ -79,7 +77,7 @@ with st.sidebar:
     if api_key and api_key != "your_rapidapi_key_here":
         st.success("🌐 Live Jobs: API Connected")
     else:
-        st.error("❌ No API key — using local CSV")
+        st.error("❌ No API key — add to .env file")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -140,13 +138,13 @@ if resume_text:
         with st.spinner(f"🌐 Fetching live jobs for: **{query}**..."):
             jobs_df = fetch_jobs(query=query, num_pages=2)
         if jobs_df.empty:
-            st.warning("⚠️ API returned no results — falling back to local dataset.")
-            jobs_df = get_fallback_jobs()
+            st.error("❌ API returned no results. Check your API key or try again.")
+            st.stop()
         else:
             st.success(f"✅ Loaded **{len(jobs_df)} live jobs** from JSearch API")
     else:
-        st.warning("⚠️ No API key found in .env — using local dataset.")
-        jobs_df = get_fallback_jobs()
+        st.error("❌ No API key found in .env — add JSEARCH_API_KEY to your .env file.")
+        st.stop()
 
     # ── Candidate Profile ─────────────────────────────────────────────────────
     st.markdown("## 👤 Candidate Profile")
@@ -317,9 +315,3 @@ else:
         <p>Or tick <b>Demo Resume</b> above for an instant example.</p>
     </div>
     """, unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown("### 📋 Sample Job Listings (local fallback)")
-    fallback = get_fallback_jobs()[["job_title", "company", "location", "experience_years", "required_skills"]]
-    fallback.columns = ["Job Title", "Company", "Location", "Exp (yrs)", "Required Skills"]
-    st.dataframe(fallback, use_container_width=True, height=400)
